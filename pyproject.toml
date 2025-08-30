@@ -7,6 +7,14 @@ name = "portfolio-chatbot"
 version = "1.0.0"
 description = "Portfolio Chatbot with WebSocket support"
 requires-python = ">=3.8"
-
-[tool.setuptools]
-packages = ["app"]
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "websockets>=11.0.3",
+    "chromadb>=0.4.15",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.4.2",
+    "pydantic-settings>=2.0.3",
+    "requests>=2.31.0",
+    "sentence-transformers>=2.2.2"
+]
