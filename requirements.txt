@@ -10,6 +10,5 @@ requests==2.31.0
 # --extra-index-url https://download.pytorch.org/whl/cpu
 # torch==2.2.2
 # sentence-transformers
-# chromadb==0.4.15 --no-binary pulsar-client
-# chromadb
-# chromadb==0.4.15
+
+chromadb==0.4.15
