@@ -1,15 +1,15 @@
 --no-binary :all:
-fastapi==0.115.14
-uvicorn==0.34.3
-websockets==15.0.1
-# python-dotenv==1.0.0
-pydantic>=2.11.5
-pydantic-settings==2.10.1
-requests==2.32.3
+fastapi==0.104.1
+uvicorn==0.24.0
+websockets==11.0.3
+python-dotenv==1.0.0
+pydantic>=2.10.4
+pydantic-settings==2.0.3
+requests==2.31.0
 # sentence-transformers==2.2.2
 # --extra-index-url https://download.pytorch.org/whl/cpu
 # torch==2.2.2
 # sentence-transformers
 # chromadb==0.4.15 --no-binary pulsar-client
 # chromadb
-# chromadb==1.0.20
+# chromadb==0.4.15
