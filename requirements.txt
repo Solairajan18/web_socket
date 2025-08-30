@@ -7,8 +7,8 @@ pydantic>=2.10.4
 pydantic-settings==2.0.3
 requests==2.31.0
 # sentence-transformers==2.2.2
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.2.2
-sentence-transformers
+# --extra-index-url https://download.pytorch.org/whl/cpu
+# torch==2.2.2
+# sentence-transformers
 
 chromadb==0.4.15
