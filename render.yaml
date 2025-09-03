@@ -1,13 +1,10 @@
 services:
-  # A Docker web service
   - type: web
     name: solai-portfolio-chat
-    env: python
-    # buildCommand: pip install -r requirements.txt
-    buildCommand: apt-get update && apt-get install -y build-essential curl pkg-config libssl-dev && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && source $HOME/.cargo/env && pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
+    env: docker
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8000
     autoDeploy: true
