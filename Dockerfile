@@ -5,27 +5,35 @@ WORKDIR /app
 
 # Install Python and development tools
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    curl \
+    gnupg \
+    build-essential \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y \
     python3.11 \
     python3.11-dev \
-    python3-pip \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+    python3.11-distutils \
+    && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python3.11 get-pip.py \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm get-pip.py
 
-# Set Python 3.11 as default python3
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
-    update-alternatives --set python3 /usr/bin/python3.11
+# Create symlinks for Python and pip
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.11 /usr/bin/python
 
 # Verify Python installation
 RUN python3 --version && \
-    pip3 --version
+    python3 -m pip --version
 
 # Copy requirements first for better cache usage
 COPY requirements.txt .
 
 # Upgrade pip and install requirements
-RUN pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
