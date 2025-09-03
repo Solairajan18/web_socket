@@ -17,6 +17,36 @@ RUN yum update -y && \
     git \
     curl \
     openssl-devel \
+    libtool \
+    autoconf \
+    automake \
+    bison \
+    byacc \
+    cscope \
+    ctags \
+    elfutils \
+    flex \
+    gcc-gfortran \
+    indent \
+    intltool \
+    patch \
+    patchutils \
+    rcs \
+    redhat-rpm-config \
+    rpm-build \
+    rpm-sign \
+    subversion \
+    swig \
+    systemtap \
+    && yum clean all
+
+# Install C++ additional development tools
+RUN yum install -y \
+    glibc-devel \
+    glibc-headers \
+    glibc-static \
+    libstdc++-devel \
+    libstdc++-static \
     && yum clean all
 
 # Install Rust (needed for some Python packages)
