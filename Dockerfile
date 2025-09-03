@@ -1,31 +1,15 @@
-FROM python:3.11-slim
+FROM chromadb/chroma:1.0.21.dev53
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies and C++ tools
-RUN apt-get update --fix-missing && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential \
-    cmake \
-    gcc \
-    g++ \
-    git \
-    curl \
-    libssl-dev \
-    pkg-config \
-    libtool \
-    autoconf \
-    automake \
-    python3-dev \
-    libstdc++-9-dev \
-    wget \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Show Python version and location
+RUN python3 --version && \
+    which python3 && \
+    pip3 --version
 
-# Install Rust (needed for some Python packages)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+# The chromadb image already includes all necessary dependencies
+# and has Python with required C++ libraries installed
 
 # Copy requirements first for better cache usage
 COPY requirements.txt .
