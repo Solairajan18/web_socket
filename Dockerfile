@@ -4,7 +4,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies and C++ tools
-RUN apt-get update && apt-get install -y \
+RUN apt-get update --fix-missing && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     cmake \
     gcc \
@@ -17,7 +18,9 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     python3-dev \
-    libstdc++-10-dev \
+    libstdc++-9-dev \
+    wget \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust (needed for some Python packages)
