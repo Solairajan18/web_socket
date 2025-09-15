@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 WebSocket chatbot server using OpenRouter/OpenAI to answer questions about skills, experience, and projects.
+Includes fuzzy matching for knowledge-base responses.
 No database persistence.
 """
 
@@ -9,21 +10,23 @@ import asyncio
 import json
 import uuid
 import logging
+import random
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any
+import difflib
 
 import websockets
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 from openai import OpenAI
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 # -------------------------
 # Config & logging
 # -------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger("solai-ws")
-# load_dotenv()
+load_dotenv()
 
 OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1")
 MODEL_NAME = os.environ.get("MODEL_NAME", "openai/gpt-oss-20b:free")
@@ -36,6 +39,54 @@ HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 sessions: Dict[str, List[Dict[str, Any]]] = {}
 client = OpenAI(base_url=OPENROUTER_API_URL, api_key=OPENROUTER_API_KEY)
+
+# -------------------------
+# Knowledge Base
+# -------------------------
+KNOWLEDGE_BASE = {
+    "hi": [
+        "👋 Hey there! Welcome to my portfolio. How can I assist you?",
+        "😊 Hello! Feel free to ask me about my experience, skills, or projects.",
+    ],
+    "hello": [
+        "👋 Hello! I'm Solai, an AWS Cloud Engineer. How can I help you today?",
+    ],
+    "who are you": [
+        "🧑‍💻 I'm Solai, an AWS Cloud Engineer with expertise in Terraform, Python, and cloud automation.",
+    ],
+    "experience": [
+        "💼 I have over five years of experience in the IT industry, focusing on cloud engineering and automation with AWS, Terraform, Python, Pytest, BDD testing, and GitLab CI/CD.",
+    ],
+    "skills": [
+        "🛠️ My key skills include AWS, Terraform, Python, GitLab CI/CD, BDD, Pytest, and cloud automation."
+    ],
+    "projects": [
+        "📂 I worked on mainframe-to-AWS modernization, DB2 to DynamoDB migration, and developed high-availability APIs. You can also check out my projects on my portfolio website: [https://solairajan.online/](https://solairajan.online/)"
+    ],
+    "contact": [
+        "📬 You can reach me via my website: [https://solairajan.online/](https://solairajan.online/), LinkedIn: [https://www.linkedin.com/in/solai-rajan/](https://www.linkedin.com/in/solai-rajan/), email: [solai13kamaraj@gmail.com](mailto:solai13kamaraj@gmail.com), and GitHub: [https://github.com/Solairajan18](https://github.com/Solairajan18)"
+    ],
+}
+
+def check_knowledge_base(user_text: str) -> str:
+    """
+    Check the knowledge base for an exact or fuzzy match.
+    Returns a random response or None if not found.
+    """
+    user_text_lower = user_text.lower()
+
+    # 1. Exact substring match
+    for key, responses in KNOWLEDGE_BASE.items():
+        if key in user_text_lower:
+            return random.choice(responses)
+
+    # 2. Fuzzy match using difflib
+    match = difflib.get_close_matches(user_text_lower, KNOWLEDGE_BASE.keys(), n=1, cutoff=0.6)
+    if match:
+        return random.choice(KNOWLEDGE_BASE[match[0]])
+
+    # 3. Not found
+    return None
 
 # -------------------------
 # Session JSON helpers
@@ -114,23 +165,28 @@ async def handle_chat_message(raw: str, websocket) -> None:
         user_entry = {"role": "user", "content": user_text, "ts": datetime.now(timezone.utc).isoformat()}
         sessions[session_id].append(user_entry)
 
-        # model messages
-        recent = sessions[session_id][-12:]
-        model_messages = [{"role": "system", "content": PERSONA.get("system_prompt", "")}]
-        for m in recent:
-            if m["role"] in ("user", "assistant"):
-                model_messages.append({"role": m["role"], "content": m["content"]})
+        # 1. Check knowledge base first
+        kb_response = check_knowledge_base(user_text)
+        if kb_response:
+            assistant_text = kb_response
+        else:
+            # 2. Use LLM fallback
+            recent = sessions[session_id][-12:]
+            model_messages = [{"role": "system", "content": PERSONA.get("system_prompt", "")}]
+            for m in recent:
+                if m["role"] in ("user", "assistant"):
+                    model_messages.append({"role": m["role"], "content": m["content"]})
 
-        logger.info("Calling OpenRouter for session %s ...", session_id)
-        assistant_text = await call_openrouter(model_messages)
-        assistant_text = assistant_text.strip() or "Sorry, I couldn't generate a response."
+            logger.info("Calling OpenRouter for session %s ...", session_id)
+            assistant_text = await call_openrouter(model_messages)
+            assistant_text = assistant_text.strip() or "Sorry, I couldn't generate a response."
 
         # append assistant reply
         bot_entry = {"role": "assistant", "content": assistant_text, "ts": datetime.now(timezone.utc).isoformat()}
         sessions[session_id].append(bot_entry)
         persist_session_history(session_id)
 
-        # send response first
+        # send response
         response = {
             "ok": True,
             "session_id": session_id,
@@ -152,7 +208,6 @@ async def handle_chat_message(raw: str, websocket) -> None:
             await websocket.send(json.dumps({"ok": False, "error": str(e)}))
         except (ConnectionClosedOK, ConnectionClosedError):
             logger.info("Client disconnected before error could be sent")
-
 
 async def ws_handler(websocket):
     logger.info("Client connected: %s", websocket.remote_address)
