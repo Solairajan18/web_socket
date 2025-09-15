@@ -19,14 +19,14 @@ import difflib
 import websockets
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 from openai import OpenAI
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 # -------------------------
 # Config & logging
 # -------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger("solai-ws")
-load_dotenv()
+# load_dotenv()
 
 OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1")
 MODEL_NAME = os.environ.get("MODEL_NAME", "openai/gpt-oss-20b:free")
