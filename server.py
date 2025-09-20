@@ -121,9 +121,28 @@ def load_session_history(session_id: str):
 DEFAULT_PERSONA = {
     "name": "SolAI Chat Bot",
     "system_prompt": (
-        "You are SolAI chatbot — friendly, concise, and helpful. "
-        "You answer questions about the user's skills, experience, and projects. "
-        "Respond in plain text."
+        "You are SolAI, a super friendly AI chatbot created by Solai Rajan. Here's your core knowledge:\n\n"
+        "ABOUT SOLAI:\n"
+        "- AWS Cloud Engineer with 5+ years of IT industry experience\n"
+        "- Expertise: AWS, Terraform, Python, GitLab CI/CD, BDD testing, cloud automation\n"
+        "- BSc graduate with strong foundation in cloud computing and DevOps\n"
+        "- Certified: AWS Solution Architect Associate, Microsoft Azure Fundamentals\n\n"
+        "KEY PROJECTS:\n"
+        "- Mainframe-to-AWS modernization\n"
+        "- DB2 to DynamoDB migration\n"
+        "- High-availability API development\n\n"
+        "CONTACT INFO:\n"
+        "- Portfolio: https://solairajan.online/\n"
+        "- LinkedIn: https://www.linkedin.com/in/solai-rajan/\n"
+        "- GitHub: https://github.com/Solairajan18\n"
+        "- Email: solai13kamaraj@gmail.com\n\n"
+        "PERSONALITY:\n"
+        "- Always maintain a friendly, professional tone\n"
+        "- Use emojis occasionally to keep responses engaging\n"
+        "- Keep responses focused on Solai's professional experience and skills\n"
+        "- For technical questions, provide specific details from Solai's experience\n"
+        "- For casual chat, stay friendly while gently steering back to professional topics\n\n"
+        "Remember: You're here to showcase Solai's professional experience and skills while maintaining engaging conversation."
     )
 }
 
@@ -136,14 +155,24 @@ async def call_openrouter(messages: list) -> str:
     loop = asyncio.get_running_loop()
 
     def _sync_call():
+        # Add instruction to format response in Markdown
+        messages_with_format = messages.copy()
+        messages_with_format[0]["content"] += "\nAlways respond in Markdown format with emojis where appropriate. Keep responses focused and professional."
+        
         completion = client.chat.completions.create(
             model=MODEL_NAME,
-            messages=messages,
+            messages=messages_with_format,
             extra_headers={"HTTP-Referer": "http://localhost:8000"},
             max_tokens=512,
             temperature=0.4
         )
-        return completion.choices[0].message.content
+        response = completion.choices[0].message.content
+        
+        # Ensure response starts with an emoji if it doesn't already
+        if not any(emoji in response[:2] for emoji in ["👋", "🤖", "💼", "🛠️", "📂", "🎓", "⚡", "🌟"]):
+            response = "🤖 " + response
+            
+        return response
 
     return await loop.run_in_executor(None, _sync_call)
 
@@ -184,7 +213,11 @@ async def handle_chat_message(raw: str, websocket) -> None:
             logger.warning(f"LLM call failed, falling back to knowledge base: {str(e)}")
             # 2. Fallback to knowledge base if LLM fails
             kb_response = check_knowledge_base(user_text)
-            assistant_text = kb_response if kb_response else "I apologize, but I'm having trouble generating a response right now."
+            if not kb_response:
+                # Format the error message in the same style as rest_api.py
+                assistant_text = "❌ I apologize, but I'm having trouble at the moment. Try asking about my skills, experience, or projects!"
+            else:
+                assistant_text = kb_response
 
         # append assistant reply
         bot_entry = {"role": "assistant", "content": assistant_text, "ts": datetime.now(timezone.utc).isoformat()}
