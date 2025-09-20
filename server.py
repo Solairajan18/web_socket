@@ -165,12 +165,8 @@ async def handle_chat_message(raw: str, websocket) -> None:
         user_entry = {"role": "user", "content": user_text, "ts": datetime.now(timezone.utc).isoformat()}
         sessions[session_id].append(user_entry)
 
-        # 1. Check knowledge base first
-        kb_response = check_knowledge_base(user_text)
-        if kb_response:
-            assistant_text = kb_response
-        else:
-            # 2. Use LLM fallback
+        # 1. Try LLM first
+        try:
             recent = sessions[session_id][-12:]
             model_messages = [{"role": "system", "content": PERSONA.get("system_prompt", "")}]
             for m in recent:
@@ -179,7 +175,16 @@ async def handle_chat_message(raw: str, websocket) -> None:
 
             logger.info("Calling OpenRouter for session %s ...", session_id)
             assistant_text = await call_openrouter(model_messages)
-            assistant_text = assistant_text.strip() or "Sorry, I couldn't generate a response."
+            assistant_text = assistant_text.strip()
+            
+            if not assistant_text:
+                raise Exception("Empty response from LLM")
+                
+        except Exception as e:
+            logger.warning(f"LLM call failed, falling back to knowledge base: {str(e)}")
+            # 2. Fallback to knowledge base if LLM fails
+            kb_response = check_knowledge_base(user_text)
+            assistant_text = kb_response if kb_response else "I apologize, but I'm having trouble generating a response right now."
 
         # append assistant reply
         bot_entry = {"role": "assistant", "content": assistant_text, "ts": datetime.now(timezone.utc).isoformat()}
